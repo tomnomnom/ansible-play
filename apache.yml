@@ -1,0 +1,24 @@
+---
+- hosts: webservers
+  vars:
+    packages: [ 'apache2', 'php5' ]
+    docroot: /var/www/tests
+  tasks:
+    - name: Install packages
+      apt: name={{ item }} state=latest
+      with_items: packages
+      notify: Restart apache
+
+    - name: Create docroot
+      file: path={{ docroot }} state=directory owner=www-data group=www-data
+
+    - name: Create example index file
+      copy: src=index.php dest={{ docroot }}/ owner=www-data group=www-data mode=0644
+
+    - name: Configure vhost
+      template: src=vhost.tpl dest=/etc/apache2/sites-available/000-default.conf
+      notify: Restart apache
+
+  handlers:
+    - name: Restart apache
+      service: name=apache2 state=restarted
